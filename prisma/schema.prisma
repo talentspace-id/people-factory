@@ -1,0 +1,244 @@
+// People Factory — candidate personality assessment.
+//
+// Multi-tenant from day one (see CLAUDE.md, Architecture principle 1): every
+// account-scoped table carries accountId directly, denormalized rather than
+// reached through a join, so a Postgres RLS policy can reference it with no
+// subquery. QuestionSet and ActionItemTemplate are NOT account-scoped — the
+// instrument and its interview-action content are shared across all accounts,
+// versioned instead (Architecture principle 2: rubrics are data, not code).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id          String   @id @default(uuid())
+  name        String
+  createdAt   DateTime @default(now())
+
+  interviewers Interviewer[]
+  candidates   Candidate[]
+
+  @@map("accounts")
+}
+
+model Interviewer {
+  id        String   @id @default(uuid())
+  accountId String   @map("account_id")
+  account   Account  @relation(fields: [accountId], references: [id])
+  email     String   @unique
+  fullName  String   @map("full_name")
+  createdAt DateTime @default(now())
+
+  loginTokens     InterviewerLoginToken[]
+  sessions        InterviewerSession[]
+  invitedCandidates Candidate[]
+
+  @@index([accountId])
+  @@map("interviewers")
+}
+
+/// One-time magic-link sign-in secret. Only the hash is stored — see
+/// src/lib/auth/tokens.ts.
+model InterviewerLoginToken {
+  id            String    @id @default(uuid())
+  interviewerId String    @map("interviewer_id")
+  interviewer   Interviewer @relation(fields: [interviewerId], references: [id])
+  tokenHash     String    @unique @map("token_hash")
+  expiresAt     DateTime  @map("expires_at")
+  consumedAt    DateTime? @map("consumed_at")
+  createdAt     DateTime  @default(now())
+
+  @@index([interviewerId])
+  @@map("interviewer_login_tokens")
+}
+
+/// A signed-in interviewer's session cookie value, hashed the same way as a
+/// login token (see src/lib/auth/tokens.ts) — a DB leak yields no usable
+/// credential either way.
+model InterviewerSession {
+  id            String    @id @default(uuid())
+  interviewerId String    @map("interviewer_id")
+  interviewer   Interviewer @relation(fields: [interviewerId], references: [id])
+  tokenHash     String    @unique @map("token_hash")
+  expiresAt     DateTime  @map("expires_at")
+  createdAt     DateTime  @default(now())
+
+  @@index([interviewerId])
+  @@map("interviewer_sessions")
+}
+
+enum Dichotomy {
+  EI
+  SN
+  TF
+  JP
+}
+
+enum ClarityBand {
+  SLIGHT
+  MODERATE
+  CLEAR
+  VERY_CLEAR
+}
+
+/// A versioned instrument. Not account-scoped: the question bank and its
+/// action-item content are shared, global, data-driven config — a new
+/// version ships as a new row, never an edit to a live one an in-progress
+/// assessment might be mid-way through.
+model QuestionSet {
+  id        String   @id @default(uuid())
+  version   Int      @unique
+  name      String
+  isActive  Boolean  @default(false) @map("is_active")
+  createdAt DateTime @default(now())
+
+  questions           Question[]
+  actionItemTemplates ActionItemTemplate[]
+  assessments         Assessment[]
+
+  @@map("question_sets")
+}
+
+/// A forced-choice item: pick statementA (→ poleA) or statementB (→ poleB).
+/// poleA/poleB are letter codes (e.g. "E"/"I") rather than a hardcoded enum
+/// member, so the same schema serves any dichotomy pair without a migration.
+model Question {
+  id            String      @id @default(uuid())
+  questionSetId String      @map("question_set_id")
+  questionSet   QuestionSet @relation(fields: [questionSetId], references: [id])
+  order         Int
+  dichotomy     Dichotomy
+  poleA         String
+  poleB         String
+  statementA    String      @map("statement_a")
+  statementB    String      @map("statement_b")
+
+  responses Response[]
+
+  @@unique([questionSetId, order])
+  @@index([questionSetId])
+  @@map("questions")
+}
+
+/// Interview action-item content, keyed by (dichotomy, letter, how clearly the
+/// candidate leans that way). Content, not code — see the scoring module for
+/// how a report's ranked list is picked from this table.
+model ActionItemTemplate {
+  id            String      @id @default(uuid())
+  questionSetId String      @map("question_set_id")
+  questionSet   QuestionSet @relation(fields: [questionSetId], references: [id])
+  dichotomy     Dichotomy
+  pole          String
+  band          ClarityBand
+  title         String
+  guidance      String
+  order         Int         @default(0)
+
+  @@unique([questionSetId, dichotomy, pole, band])
+  @@index([questionSetId])
+  @@map("action_item_templates")
+}
+
+enum CandidateStatus {
+  INVITED
+  IN_PROGRESS
+  COMPLETED
+}
+
+model Candidate {
+  id                  String          @id @default(uuid())
+  accountId           String          @map("account_id")
+  account             Account         @relation(fields: [accountId], references: [id])
+  invitedByInterviewerId String       @map("invited_by_interviewer_id")
+  invitedByInterviewer Interviewer    @relation(fields: [invitedByInterviewerId], references: [id])
+  fullName            String          @map("full_name")
+  email               String
+  status              CandidateStatus @default(INVITED)
+  createdAt           DateTime        @default(now())
+
+  inviteTokens CandidateInviteToken[]
+  assessments  Assessment[]
+
+  @@index([accountId])
+  @@map("candidates")
+}
+
+/// The link a candidate follows to take (or resume) the assessment. Long TTL
+/// relative to an interviewer's login token (see tokens.ts) — a candidate may
+/// not open the email same-day, and it is single-purpose (one candidate, one
+/// question set) rather than a general credential.
+model CandidateInviteToken {
+  id          String    @id @default(uuid())
+  accountId   String    @map("account_id")
+  candidateId String    @map("candidate_id")
+  candidate   Candidate @relation(fields: [candidateId], references: [id])
+  tokenHash   String    @unique @map("token_hash")
+  expiresAt   DateTime  @map("expires_at")
+  createdAt   DateTime  @default(now())
+
+  @@index([candidateId])
+  @@map("candidate_invite_tokens")
+}
+
+model Assessment {
+  id            String      @id @default(uuid())
+  accountId     String      @map("account_id")
+  candidateId   String      @map("candidate_id")
+  candidate     Candidate   @relation(fields: [candidateId], references: [id])
+  questionSetId String      @map("question_set_id")
+  questionSet   QuestionSet @relation(fields: [questionSetId], references: [id])
+  startedAt     DateTime    @default(now()) @map("started_at")
+  completedAt   DateTime?   @map("completed_at")
+
+  responses Response[]
+  report    Report?
+
+  @@index([accountId])
+  @@index([candidateId])
+  @@map("assessments")
+}
+
+enum Choice {
+  A
+  B
+}
+
+model Response {
+  id           String     @id @default(uuid())
+  accountId    String     @map("account_id")
+  assessmentId String     @map("assessment_id")
+  assessment   Assessment @relation(fields: [assessmentId], references: [id])
+  questionId   String     @map("question_id")
+  question     Question   @relation(fields: [questionId], references: [id])
+  choice       Choice
+  answeredAt   DateTime   @default(now()) @map("answered_at")
+
+  @@unique([assessmentId, questionId])
+  @@index([accountId])
+  @@map("responses")
+}
+
+/// The generated report. dichotomyScores and actionItems are the scoring
+/// module's own output types serialized as JSON — see src/lib/scoring/mbti.ts
+/// and src/lib/reports/build.ts, the only two places that read/write their
+/// shape.
+model Report {
+  id              String     @id @default(uuid())
+  accountId       String     @map("account_id")
+  assessmentId    String     @unique @map("assessment_id")
+  assessment      Assessment @relation(fields: [assessmentId], references: [id])
+  typeCode        String     @map("type_code")
+  headline        String
+  dichotomyScores Json       @map("dichotomy_scores")
+  actionItems     Json       @map("action_items")
+  generatedAt     DateTime   @default(now()) @map("generated_at")
+
+  @@index([accountId])
+  @@map("reports")
+}

@@ -1,0 +1,309 @@
+/**
+ * Auth shell — carried over verbatim from the SGA codebase (see DESIGN.md).
+ * Same split layout: a centered form (max-width 360px) on one side, a navy
+ * gradient illustration panel on the other, hidden below 900px.
+ */
+
+.auth-shell {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+  background: #ffffff;
+}
+
+/* --- Form side --- */
+
+.auth-form-side {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  flex: 1 1 480px;
+  padding: 48px 32px;
+}
+
+.auth-form-side-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  max-width: 360px;
+}
+
+.auth-wordmark {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 40px;
+}
+
+.auth-wordmark-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #19377c;
+  color: #ffffff;
+  font-family: var(--font-dm-sans), "Inter", sans-serif;
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.auth-wordmark span {
+  font-family: var(--font-dm-sans), "Inter", sans-serif;
+  font-weight: 700;
+  font-size: 18px;
+  color: #353535;
+}
+
+.sign-in-title {
+  font-family: var(--font-inter), "Inter", sans-serif;
+  font-weight: 700;
+  font-size: 26px;
+  line-height: 32px;
+  color: #353535;
+  margin: 0;
+}
+
+.sign-in-subtitle {
+  font-family: var(--font-inter), "Inter", sans-serif;
+  font-size: 14px;
+  line-height: 20px;
+  color: #817c7c;
+  margin: 0 0 24px;
+}
+
+.sign-in-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sign-in-label {
+  font-family: var(--font-inter), "Inter", sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: #353535;
+}
+
+.sign-in-input {
+  box-sizing: border-box;
+  height: 44px;
+  padding: 8px 14px;
+  font-family: var(--font-inter), "Inter", sans-serif;
+  font-size: 14px;
+  color: #353535;
+  background: #f5f5f5;
+  border: 1px solid #e3e3e3;
+  border-radius: 10px;
+  outline: none;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.sign-in-input:focus {
+  border-color: #19377c;
+  background: #ffffff;
+}
+
+.sign-in-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 44px;
+  margin-top: 8px;
+  font-family: var(--font-inter), "Inter", sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+  background: #19377c;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.sign-in-button:hover:not(:disabled) {
+  background: #14295e;
+}
+
+.sign-in-button:disabled {
+  background: #ced8f0;
+  cursor: default;
+}
+
+.sign-in-error {
+  font-family: var(--font-inter), "Inter", sans-serif;
+  font-size: 13px;
+  color: #aa0f12;
+}
+
+.sign-in-notice {
+  padding: 14px;
+  margin-top: 8px;
+  font-family: var(--font-inter), "Inter", sans-serif;
+  font-size: 13px;
+  line-height: 19px;
+  color: #353535;
+  background: #ecf1fe;
+  border-radius: 10px;
+}
+
+.sign-in-notice p {
+  margin: 0 0 8px;
+}
+
+.sign-in-notice p:last-child {
+  margin-bottom: 0;
+}
+
+.sign-in-dev a {
+  color: #19377c;
+  font-weight: 600;
+}
+
+/* --- Illustration side --- */
+
+.auth-illustration-side {
+  position: relative;
+  flex: 1 1 560px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: radial-gradient(120% 120% at 15% 15%, #24468f 0%, #19377c 45%, #0f2352 100%);
+}
+
+.auth-illustration-glow {
+  position: absolute;
+  width: 520px;
+  height: 520px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(236, 241, 254, 0.16) 0%, rgba(236, 241, 254, 0) 70%);
+  top: -120px;
+  right: -120px;
+}
+
+.auth-illustration-content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
+  padding: 32px;
+}
+
+.auth-mock-card {
+  display: flex;
+  flex-direction: column;
+  width: 320px;
+  overflow: hidden;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 32px 64px -12px rgba(9, 20, 51, 0.45);
+  transform: rotate(-2deg);
+  padding: 20px;
+  gap: 14px;
+}
+
+.auth-mock-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.auth-mock-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #ced8f0;
+  flex-shrink: 0;
+}
+
+.auth-mock-header-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.auth-mock-line {
+  height: 7px;
+  border-radius: 4px;
+  background: #ececec;
+}
+
+.auth-mock-type-chip {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #ecf1fe;
+  border: 1px solid #ced8f0;
+  color: #19377c;
+  font-family: var(--font-inter), "Inter", sans-serif;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.auth-mock-trait-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.auth-mock-trait-label {
+  width: 18px;
+  font-family: var(--font-inter), "Inter", sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  color: #817c7c;
+  text-align: center;
+}
+
+.auth-mock-trait-track {
+  flex: 1;
+  height: 8px;
+  border-radius: 4px;
+  background: #f5f5f5;
+  overflow: hidden;
+}
+
+.auth-mock-trait-fill {
+  height: 100%;
+  border-radius: 4px;
+  background: #19377c;
+}
+
+.auth-illustration-caption {
+  max-width: 340px;
+  text-align: center;
+}
+
+.auth-illustration-caption h2 {
+  font-family: var(--font-inter), "Inter", sans-serif;
+  font-weight: 700;
+  font-size: 20px;
+  line-height: 27px;
+  color: #ffffff;
+  margin: 0 0 8px;
+}
+
+.auth-illustration-caption p {
+  font-family: var(--font-inter), "Inter", sans-serif;
+  font-size: 14px;
+  line-height: 20px;
+  color: #ced8f0;
+  margin: 0;
+}
+
+@media (max-width: 900px) {
+  .auth-illustration-side {
+    display: none;
+  }
+
+  .auth-form-side {
+    flex: 1 1 auto;
+  }
+}

@@ -1,0 +1,27 @@
+# Local Postgres for development.
+#
+# The app connects as `app_user` (non-superuser) so row-level security is
+# actually enforced; migrations and the seed connect as `postgres`, which owns
+# the tables. See docker/init-db.sql.
+
+services:
+  db:
+    image: postgres:16
+    container_name: people-factory-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: people_factory
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/init-db.sql:/docker-entrypoint-initdb.d/10-init-db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d people_factory"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  pgdata:
