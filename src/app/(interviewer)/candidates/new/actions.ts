@@ -1,6 +1,7 @@
 "use server";
 
 import { headers } from "next/headers";
+import { revalidatePath } from "next/cache";
 import { getCurrentInterviewer } from "@/lib/auth/session";
 import { inviteCandidate } from "@/lib/db/candidates";
 
@@ -34,5 +35,6 @@ export async function createInvite(_prev: InviteState, formData: FormData): Prom
     await baseUrl(),
   );
 
+  revalidatePath("/dashboard");
   return { status: "created", inviteUrl, candidateName: fullName };
 }
